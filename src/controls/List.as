@@ -1,8 +1,13 @@
-package {
+package controls {
+	import data.Collection;
+	import data.CollectionEventType;
+
 	import flash.display.Sprite;
 	import flash.events.Event;
 
 	public class List extends Sprite {
+		private var _isInitialized:Boolean;
+
 		private var _dataProvider:Collection;
 
 		public function get dataProvider():Collection {
@@ -28,9 +33,11 @@ package {
 				_dataProvider.addEventListener(CollectionEventType.RESET, dataProvider_resetHandler);
 				_dataProvider.addEventListener(Event.CHANGE, dataProvider_changeHandler);
 			}
+			draw();
 		}
 
 		public function List() {
+			_isInitialized = false;
 			addEventListener(Event.ADDED_TO_STAGE, addedToStageHandler);
 			addEventListener(Event.REMOVED_FROM_STAGE, removedFromStageHandler);
 		}
@@ -40,21 +47,53 @@ package {
 		}
 
 		private function initialize():void {
+			_isInitialized = true;
 			draw();
 		}
 
 		private function draw():void {
+			if (!_isInitialized) return;
+
+			while (numChildren) {
+				removeChildAt(0);
+			}
+
 			var length:int = _dataProvider.getLength();
 			for (var i:int = 0; i < length; i++) {
 				var item:Object = _dataProvider.getItemAt(i);
-				var categorySkin:CategorySkin = new CategorySkin();
-				categorySkin.y = i * categorySkin.height;
-				categorySkin["title"].text = item["cat"]["text"];
-				addChild(categorySkin);
+				var category:DropDownList = new DropDownList();
+				category.text = item['cat']['text'];
+				category.subcategories = item['subcat'];
+				category.addEventListener(CategoryEventType.EXPANDED, category_expandedHandler);
+				addChild(category);
+				category.y = i * category.height;
+			}
+		}
+
+		private function redraw():void {
+			var shiftY:Number = 0;
+			for (var i:int = 0; i < numChildren; i++) {
+				var category:DropDownList = DropDownList(getChildAt(i));
+				if (category.expanded) {
+					category.y = (i * category.height) + shiftY;
+					shiftY += category.height
+				}
+				else {
+					category.y = (i * category.height) + shiftY;
+				}
 			}
 		}
 
 		private function removedFromStageHandler(e:Event):void {
+			dispose();
+		}
+
+		private function dispose():void {
+			while (numChildren) {
+				DropDownList(getChildAt(0)).removeEventListener(CategoryEventType.EXPANDED, category_expandedHandler);
+				removeChildAt(0);
+			}
+			_isInitialized = false;
 		}
 
 		private function dataProvider_addItemHandler(e:Event):void {
@@ -72,5 +111,8 @@ package {
 		private function dataProvider_changeHandler(e:Event):void {
 		}
 
+		private function category_expandedHandler(e:Event):void {
+			redraw();
+		}
 	}
 }

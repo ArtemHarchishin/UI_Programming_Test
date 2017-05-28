@@ -1,4 +1,4 @@
-package {
+package data {
 	public interface ICollectionDataDescriptor {
 		function getLength(data:Object, ...rest:Array):int;
 

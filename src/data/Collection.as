@@ -1,4 +1,4 @@
-package {
+package data {
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 
@@ -19,7 +19,9 @@ package {
 
 		private var _data:Object;
 
-		public function get data():Object { return _data; }
+		public function get data():Object {
+			return _data;
+		}
 
 		public function set data(value:Object):void {
 			if (_data != value) {

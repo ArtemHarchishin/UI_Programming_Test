@@ -1,4 +1,4 @@
-package {
+package data {
 	public class CollectionEventType {
 		public static const RESET:String = "reset";
 		public static const ADD_ITEM:String = "addItem";

@@ -1,4 +1,4 @@
-package {
+package data {
 	public class CollectionDataDescriptor implements ICollectionDataDescriptor {
 		public function CollectionDataDescriptor() {}
 
