@@ -2,11 +2,26 @@ package controls {
 	import data.Collection;
 	import data.CollectionEventType;
 
+	import flash.display.DisplayObject;
 	import flash.display.Sprite;
 	import flash.events.Event;
 
 	public class List extends Sprite {
 		private var _isInitialized:Boolean;
+
+		protected var _itemFactory:Function;
+
+		public function get itemFactory():Function {
+			return _itemFactory;
+		}
+
+		public function set itemFactory(value:Function):void {
+			if (_itemFactory === value) {
+				return;
+			}
+
+			_itemFactory = value;
+		}
 
 		private var _dataProvider:Collection;
 
@@ -42,10 +57,6 @@ package controls {
 			addEventListener(Event.REMOVED_FROM_STAGE, removedFromStageHandler);
 		}
 
-		private function addedToStageHandler(e:Event):void {
-			initialize();
-		}
-
 		private function initialize():void {
 			_isInitialized = true;
 			draw();
@@ -60,20 +71,18 @@ package controls {
 
 			var length:int = _dataProvider.getLength();
 			for (var i:int = 0; i < length; i++) {
-				var item:Object = _dataProvider.getItemAt(i);
-				var category:DropDownList = new DropDownList();
-				category.text = item['cat']['text'];
-				category.subcategories = item['subcat'];
-				category.addEventListener(CategoryEventType.EXPANDED, category_expandedHandler);
-				addChild(category);
-				category.y = i * category.height;
+				var dataItem:Object = _dataProvider.getItemAt(i);
+				var item:IListItem = itemFactory();
+				item.data = dataItem;
+				addChild(DisplayObject(item));
+				item.y = i * item.height;
 			}
 		}
 
 		private function redraw():void {
 			var shiftY:Number = 0;
 			for (var i:int = 0; i < numChildren; i++) {
-				var category:DropDownList = DropDownList(getChildAt(i));
+				var category:Category = Category(getChildAt(i));
 				if (category.expanded) {
 					category.y = (i * category.height) + shiftY;
 					shiftY += category.height
@@ -84,16 +93,22 @@ package controls {
 			}
 		}
 
-		private function removedFromStageHandler(e:Event):void {
-			dispose();
-		}
-
 		private function dispose():void {
 			while (numChildren) {
-				DropDownList(getChildAt(0)).removeEventListener(CategoryEventType.EXPANDED, category_expandedHandler);
+				Category(getChildAt(0)).removeEventListener(CategoryEventType.EXPANDED, category_expandedHandler);
 				removeChildAt(0);
 			}
+			_itemFactory = null;
+			_dataProvider = null;
 			_isInitialized = false;
+		}
+
+		private function addedToStageHandler(e:Event):void {
+			initialize();
+		}
+
+		private function removedFromStageHandler(e:Event):void {
+			dispose();
 		}
 
 		private function dataProvider_addItemHandler(e:Event):void {

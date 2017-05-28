@@ -4,7 +4,7 @@ package controls {
 	import flash.events.Event;
 	import flash.text.TextField;
 
-	public class Subcategory extends Sprite {
+	public class Subcategory extends Sprite implements IListItem {
 		private var _isInitialized:Boolean;
 		private var _skin:SubcategorySkin;
 		private var _tf:TextField;
@@ -33,6 +33,7 @@ package controls {
 		}
 
 		public function Subcategory() {
+			_items = [];
 			_isInitialized = false;
 			addEventListener(Event.ADDED_TO_STAGE, addedToStageHandler);
 			addEventListener(Event.REMOVED_FROM_STAGE, removedFromStageHandler);
@@ -61,7 +62,7 @@ package controls {
 			for (var i:int = 0; i < length; i++) {
 				var text:String = _items[i]["text"];
 				var item:Item = new Item();
-				item.text = text;
+				item.label = text;
 				_itemsAnchor.addChild(item);
 				item.y = i * item.height;
 			}
@@ -81,6 +82,13 @@ package controls {
 			_skin = null;
 			_tf = null;
 			_text = null;
+		}
+
+		public function get data():Object {
+			return null;
+		}
+
+		public function set data(value:Object):void {
 		}
 	}
 }

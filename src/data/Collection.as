@@ -3,7 +3,7 @@ package data {
 	import flash.events.EventDispatcher;
 
 	public class Collection extends EventDispatcher {
-		protected var _dataDescriptor:ICollectionDataDescriptor = new CollectionDataDescriptor();
+		protected var _dataDescriptor:ICollectionDataDescriptor = new ArrayCollectionDataDescriptor();
 
 		public function get dataDescriptor():ICollectionDataDescriptor {
 			return _dataDescriptor;
@@ -48,26 +48,36 @@ package data {
 			return _dataDescriptor.getItemAt.apply(null, rest);
 		}
 
+		public function setItemAt(item:Object, index:int, ...rest:Array):void {
+			rest.insertAt(0, index);
+			rest.insertAt(0, item);
+			rest.insertAt(0, this._data);
+			_dataDescriptor.setItemAt.apply(null, rest);
+			rest.shift();
+			rest.shift();
+			dispatchEventWith(CollectionEventType.REPLACE_ITEM, rest);
+			dispatchEventWith(Event.CHANGE);
+		}
+
 		public function addItemAt(item:Object, index:int, ...rest:Array):void {
-//			rest.unshift(index);
-//			rest.unshift(item);
-//			rest.unshift(this._data);
-//			this._dataDescriptor.addItemAt.apply(null, rest);
-//			this.dispatchEventWith(Event.CHANGE);
-//			rest.shift();
-//			rest.shift();
-//			this.dispatchEventWith(CollectionEventType.ADD_ITEM, false, rest);
+			rest.unshift(index);
+			rest.unshift(item);
+			rest.unshift(_data);
+			_dataDescriptor.addItemAt.apply(null, rest);
+			dispatchEventWith(Event.CHANGE);
+			rest.shift();
+			rest.shift();
+			dispatchEventWith(CollectionEventType.ADD_ITEM, rest);
 		}
 
 		public function removeItemAt(index:int, ...rest:Array):Object {
-//			rest.unshift(index);
-//			rest.unshift(this._data);
-//			var item:Object = this._dataDescriptor.removeItemAt.apply(null, rest);
-//			this.dispatchEventWith(Event.CHANGE);
-//			rest.shift();
-//			this.dispatchEventWith(CollectionEventType.REMOVE_ITEM, false, rest);
-//			return item;
-			return {};
+			rest.unshift(index);
+			rest.unshift(_data);
+			var item:Object = _dataDescriptor.removeItemAt.apply(null, rest);
+			dispatchEventWith(Event.CHANGE);
+			rest.shift();
+			dispatchEventWith(CollectionEventType.REMOVE_ITEM, rest);
+			return item;
 		}
 
 		public function removeItem(item:Object):void {
@@ -88,8 +98,8 @@ package data {
 			return _dataDescriptor.getLength.apply(null, rest);
 		}
 
-		private function dispatchEventWith(type:String):void {
-			var event:Event = new Event(type);
+		private function dispatchEventWith(type:String, data:Object = null):void {
+			var event:Event = new DataEvent(type, data);
 			dispatchEvent(event);
 		}
 	}
