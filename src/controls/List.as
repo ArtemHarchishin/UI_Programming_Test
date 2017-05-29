@@ -1,13 +1,16 @@
 package controls {
+
 	import data.Collection;
 	import data.CollectionEventType;
+	import data.DataEvent;
 
 	import flash.display.DisplayObject;
 	import flash.display.Sprite;
 	import flash.events.Event;
 
-	public class List extends Sprite {
-		private var _isInitialized:Boolean;
+	public class List extends BaseControl {
+		private var _selectedItem:BaseControl;
+		private var _itemsContainer:Sprite;
 
 		protected var _itemFactory:Function;
 
@@ -52,63 +55,68 @@ package controls {
 		}
 
 		public function List() {
-			_isInitialized = false;
-			addEventListener(Event.ADDED_TO_STAGE, addedToStageHandler);
-			addEventListener(Event.REMOVED_FROM_STAGE, removedFromStageHandler);
 		}
 
-		private function initialize():void {
-			_isInitialized = true;
-			draw();
+		private var _scrollbar:Scroller;
+
+		override protected function initialize():void {
+			_itemsContainer = new Sprite();
+			addChild(_itemsContainer);
+			_scrollbar = new Scroller();
+			addChild(_scrollbar);
 		}
 
-		private function draw():void {
-			if (!_isInitialized) return;
+		override protected function draw():void {
+			if (!isInitialized) return;
 
-			while (numChildren) {
-				removeChildAt(0);
+			while (_itemsContainer.numChildren) {
+				_itemsContainer.removeChildAt(0);
 			}
 
+			var shiftY:Number = 0;
 			var length:int = _dataProvider.getLength();
 			for (var i:int = 0; i < length; i++) {
 				var dataItem:Object = _dataProvider.getItemAt(i);
-				var item:IListItem = itemFactory();
+				var item:BaseControl = itemFactory();
 				item.data = dataItem;
-				addChild(DisplayObject(item));
-				item.y = i * item.height;
+				item.addEventListener(BaseControlEventType.SELECTED, item_selectedHandler);
+				_itemsContainer.addChild(DisplayObject(item));
+				item.y = shiftY;
+				shiftY = item.y + item.height;
 			}
+
+			drawScrollBar();
 		}
 
-		private function redraw():void {
-			var shiftY:Number = 0;
-			for (var i:int = 0; i < numChildren; i++) {
-				var category:Category = Category(getChildAt(i));
-				if (category.expanded) {
-					category.y = (i * category.height) + shiftY;
-					shiftY += category.height
-				}
-				else {
-					category.y = (i * category.height) + shiftY;
-				}
-			}
+		private function drawScrollBar():void {
+			_scrollbar.x = width;
+			var contentHeight:Number = _itemsContainer.numChildren * _itemsContainer.getChildAt(0).height;
+			_scrollbar.setThumbPercent(height / contentHeight);
+			_scrollbar.height = height;
+			_scrollbar.setSize(10, 200);
 		}
 
-		private function dispose():void {
-			while (numChildren) {
-				Category(getChildAt(0)).removeEventListener(CategoryEventType.EXPANDED, category_expandedHandler);
-				removeChildAt(0);
+		override protected function dispose():void {
+			if (_itemsContainer) {
+				while (_itemsContainer.numChildren) {
+					_itemsContainer.getChildAt(0).removeEventListener(BaseControlEventType.SELECTED, item_selectedHandler);
+					_itemsContainer.removeChildAt(0);
+				}
+				_itemsContainer = null;
 			}
 			_itemFactory = null;
 			_dataProvider = null;
-			_isInitialized = false;
 		}
 
-		private function addedToStageHandler(e:Event):void {
-			initialize();
-		}
+		private function redraw():void {
+			if (!isInitialized) return;
 
-		private function removedFromStageHandler(e:Event):void {
-			dispose();
+			var shiftY:Number = 0;
+			for (var i:int = 0; i < _itemsContainer.numChildren; i++) {
+				var item:BaseControl = BaseControl(_itemsContainer.getChildAt(i));
+				item.y = shiftY;
+				shiftY = item.y + item.height;
+			}
 		}
 
 		private function dataProvider_addItemHandler(e:Event):void {
@@ -126,7 +134,14 @@ package controls {
 		private function dataProvider_changeHandler(e:Event):void {
 		}
 
-		private function category_expandedHandler(e:Event):void {
+		private function item_selectedHandler(e:DataEvent):void {
+			var clickedItem:BaseControl = BaseControl(e.data);
+			if (_selectedItem != clickedItem) {
+				if (_selectedItem) {
+					_selectedItem.deselect();
+				}
+				_selectedItem = clickedItem;
+			}
 			redraw();
 		}
 	}

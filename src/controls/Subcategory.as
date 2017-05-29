@@ -1,14 +1,14 @@
 package controls {
+	import data.DataEvent;
+
 	import flash.display.MovieClip;
-	import flash.display.Sprite;
-	import flash.events.Event;
 	import flash.text.TextField;
 
-	public class Subcategory extends Sprite implements IListItem {
-		private var _isInitialized:Boolean;
+	public class Subcategory extends BaseControl {
 		private var _skin:SubcategorySkin;
 		private var _tf:TextField;
 		private var _itemsAnchor:MovieClip;
+
 		private var _items:Array;
 
 		public function set items(value:Array):void {
@@ -19,40 +19,49 @@ package controls {
 			}
 		}
 
-		private var _text:String;
-
-		public function get text():String {
-			return _text;
+		public function Subcategory() {
+			_items = [];
 		}
 
-		public function set text(value:String):void {
-			if (_text != value) {
-				_text = value;
-				draw();
+		override protected function commitData():void {
+			if (_data !== null) {
+				_label = dataToLabel(_data);
+				_items = dataToItems(_data);
 			}
 		}
 
-		public function Subcategory() {
-			_items = [];
-			_isInitialized = false;
-			addEventListener(Event.ADDED_TO_STAGE, addedToStageHandler);
-			addEventListener(Event.REMOVED_FROM_STAGE, removedFromStageHandler);
+		private function dataToItems(data:Object):Array {
+//			var result:Array;
+//			if (_itemsField != null && item && item.hasOwnProperty(_labelField)) {
+//				labelResult = item[_labelField];
+//				if (labelResult is String) {
+//					return labelResult as String;
+//				}
+//				else if (labelResult) {
+//					return labelResult.toString();
+//				}
+//			}
+//			else if (item is String) {
+//				return item as String;
+//			}
+//			else if (item !== null) {
+//				return item.toString();
+//			}
+			return data as Array;
 		}
 
-		private function initialize():void {
+		override protected function initialize():void {
 			_skin = new SubcategorySkin();
 			_skin.stop();
 			_itemsAnchor = _skin["items_anchor"];
 			_tf = _skin["text"];
 			_tf.text = "";
 			addChild(_skin);
-			_isInitialized = true;
-			draw();
 		}
 
-		private function draw():void {
-			if (!_isInitialized) return;
-			_tf.text = _text;
+		override protected function draw():void {
+			if (!isInitialized) return;
+			_tf.text = label;
 
 			while (_itemsAnchor.numChildren) {
 				_itemsAnchor.removeChildAt(0);
@@ -60,35 +69,29 @@ package controls {
 
 			var length:uint = _items.length;
 			for (var i:int = 0; i < length; i++) {
-				var text:String = _items[i]["text"];
 				var item:Item = new Item();
-				item.label = text;
+				item.data = _items[i];
+				item.addEventListener(BaseControlEventType.SELECTED, item_selectedHandler);
 				_itemsAnchor.addChild(item);
 				item.y = i * item.height;
 			}
 		}
 
-		private function addedToStageHandler(e:Event):void {
-			initialize();
-		}
-
-		private function removedFromStageHandler(e:Event):void {
-			dispose();
-		}
-
-		private function dispose():void {
+		override protected function dispose():void {
+			if (_itemsAnchor) {
+				while (_itemsAnchor.numChildren) {
+					_itemsAnchor.getChildAt(0).removeEventListener(BaseControlEventType.SELECTED, item_selectedHandler);
+					_itemsAnchor.removeChildAt(0);
+				}
+				_itemsAnchor = null;
+			}
 			_items = null;
-			_isInitialized = false;
 			_skin = null;
 			_tf = null;
-			_text = null;
 		}
 
-		public function get data():Object {
-			return null;
-		}
-
-		public function set data(value:Object):void {
+		private function item_selectedHandler(e:DataEvent):void {
+			dispatchEvent(e);
 		}
 	}
 }
